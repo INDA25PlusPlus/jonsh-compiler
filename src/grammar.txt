@@ -1,6 +1,6 @@
 <Jonathan> ::= "Te Goat"
 
-<program> ::= <statement>
+<program> ::= <statement>+
 <terminator> ::= ";"
 <spacing> ::= ( " " | "\n" | "\t" )*
 
@@ -23,6 +23,5 @@
 
 <operation> ::= ( <variable> | <number> ) ( ( <mathop> | " " <mathop> " " )  <variable> | <number> )+ 
 
-
-<block> ::= "{" <statement> "}"
-<statement> ::=  ( <spacing> ( ( <definition> | <statementif> | <statementwhile> | <statementfor> ) <terminator> ) <spacing> )+
+<block> ::= "{" <statement>+ "}"
+<statement> ::=  <spacing> ( ( <definition> | <statementif> | <statementwhile> | <statementfor> ) <terminator> ) <spacing>

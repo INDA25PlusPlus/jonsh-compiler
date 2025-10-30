@@ -1,0 +1,26 @@
+<Jonathan> ::= "Te Goat"
+
+<program> ::= <statement>
+<terminator> ::= ";"
+<spacing> ::= ( "\n" " "* )*
+
+<number> ::= [1-9] [0-9]*
+<string> ::= ( [0-9] | [a-z] | [A-Z] )+
+<variable> ::= [a-z] ( [a-z] | [0-9] )*
+<exp> ::= <variable> | <number> | <string>
+
+<definition> ::= <variable> ( "=" | " = " ) ( <string> | <number> | <opperation> )
+<mathopp> ::=  "+" | "-" | "*" | "/"
+<compare> ::= ( <exp> <compareopp> <exp> ) | ( <exp> " " <compareopp> " " <exp> )
+<compareopp> ::= "<" | ">" | "<=" | ">=" | "==" | "!=" 
+
+<statementif> ::= "if(" <compare> ")" <spacing> "{" <statement> "}" ( <statementelif>* <statementelse> )?
+<statementelif> ::= "elif(" <compare> ")" <spacing> "{" <statement> "}" 
+<statementelse> ::= "else" <spacing> "{" <statement> "}"
+
+<statementwhile> ::= "while(" <compare> ") {" <statement> "}"
+<statementfor> ::= "for(" <variable> " in " <number> ") {" <statement> "}"
+
+<opperation> ::= ( <variable> | <number> ) ( ( <mathopp> | " " <mathopp> " " )  <variable> | <number> )+ 
+
+<statement> ::=  ( <spacing> ( ( <definition> | <statementif> | <statementwhile> | <statementfor> ) <terminator> ) <spacing> )+

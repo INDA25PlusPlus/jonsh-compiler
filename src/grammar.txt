@@ -2,7 +2,7 @@
 
 <program> ::= <statement>
 <terminator> ::= ";"
-<spacing> ::= ( "\n" " "* )*
+<spacing> ::= "\n"* " "*
 
 <number> ::= [1-9] [0-9]*
 <string> ::= ( [0-9] | [a-z] | [A-Z] )+
@@ -18,8 +18,8 @@
 <statementelif> ::= "elif(" <compare> ")" <spacing> "{" <statement> "}" 
 <statementelse> ::= "else" <spacing> "{" <statement> "}"
 
-<statementwhile> ::= "while(" <compare> ") {" <statement> "}"
-<statementfor> ::= "for(" <variable> " in " <number> ") {" <statement> "}"
+<statementwhile> ::= "while(" <compare> ")" <spacing> "{" <statement> "}"
+<statementfor> ::= "for(" <variable> " in " <number> ")" <spacing> "{" <statement> "}"
 
 <opperation> ::= ( <variable> | <number> ) ( ( <mathopp> | " " <mathopp> " " )  <variable> | <number> )+ 
 

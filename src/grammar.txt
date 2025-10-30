@@ -2,25 +2,27 @@
 
 <program> ::= <statement>
 <terminator> ::= ";"
-<spacing> ::= "\n"* " "*
+<spacing> ::= ( " " | "\n" | "\t" )*
 
 <number> ::= [1-9] [0-9]*
 <string> ::= ( [0-9] | [a-z] | [A-Z] )+
 <variable> ::= [a-z] ( [a-z] | [0-9] )*
 <exp> ::= <variable> | <number> | <string>
 
-<definition> ::= <variable> ( "=" | " = " ) ( <string> | <number> | <opperation> )
-<mathopp> ::=  "+" | "-" | "*" | "/"
-<compare> ::= ( <exp> <compareopp> <exp> ) | ( <exp> " " <compareopp> " " <exp> )
-<compareopp> ::= "<" | ">" | "<=" | ">=" | "==" | "!=" 
+<definition> ::= <variable> ( "=" | " = " ) ( <string> | <number> | <operation> )
+<mathop> ::=  "+" | "-" | "*" | "/"
+<compare> ::= ( <exp> <compareop> <exp> ) | ( <exp> " " <compareop> " " <exp> )
+<compareop> ::= "<" | ">" | "<=" | ">=" | "==" | "!=" 
 
-<statementif> ::= "if(" <compare> ")" <spacing> "{" <statement> "}" ( <statementelif>* <statementelse> )?
-<statementelif> ::= "elif(" <compare> ")" <spacing> "{" <statement> "}" 
-<statementelse> ::= "else" <spacing> "{" <statement> "}"
+<statementif> ::= "if(" <compare> ")" <spacing> <block> ( <statementelif>* <statementelse> )?
+<statementelif> ::= "elif(" <compare> ")" <spacing> <block> 
+<statementelse> ::= "else" <spacing> <block>
 
-<statementwhile> ::= "while(" <compare> ")" <spacing> "{" <statement> "}"
-<statementfor> ::= "for(" <variable> " in " <number> ")" <spacing> "{" <statement> "}"
+<statementwhile> ::= "while(" <compare> ")" <spacing> <block>
+<statementfor> ::= "for(" <variable> " in " <number> ")" <spacing> <block>
 
-<opperation> ::= ( <variable> | <number> ) ( ( <mathopp> | " " <mathopp> " " )  <variable> | <number> )+ 
+<operation> ::= ( <variable> | <number> ) ( ( <mathop> | " " <mathop> " " )  <variable> | <number> )+ 
 
+
+<block> ::= "{" <statement> "}"
 <statement> ::=  ( <spacing> ( ( <definition> | <statementif> | <statementwhile> | <statementfor> ) <terminator> ) <spacing> )+

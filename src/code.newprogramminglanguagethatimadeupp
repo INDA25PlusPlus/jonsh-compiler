@@ -1,0 +1,16 @@
+an = 0;
+a0 = 0;
+a1 = 1;
+n = 13;
+if(n==0) {
+    return(0);
+} elif(n==1) {
+    return(1);
+} else {
+    for(i in 10) {
+        an = a1 + a0;
+        a0 = a1;
+        a1 = an;
+    };
+    return(an);
+};

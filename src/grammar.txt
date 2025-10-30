@@ -1,27 +1,26 @@
 <Jonathan> ::= "Te Goat"
-
+/* Att semicolon finns i slutet av block är med mening */
 <program> ::= <statement>+
 <terminator> ::= ";"
 <spacing> ::= ( " " | "\n" | "\t" )*
+<print> ::= "return(" <exp> ")"
 
 <number> ::= [1-9] [0-9]*
-<string> ::= ( [0-9] | [a-z] | [A-Z] )+
 <variable> ::= [a-z] ( [a-z] | [0-9] )*
-<exp> ::= <variable> | <number> | <string>
+<exp> ::= <variable> | <number> 
 
-<definition> ::= <variable> ( "=" | " = " ) ( <string> | <number> | <operation> )
+<definition> ::= <variable> ( "=" | " = " ) ( <number> | <operation> )
 <mathop> ::=  "+" | "-" | "*" | "/"
 <compare> ::= ( <exp> <compareop> <exp> ) | ( <exp> " " <compareop> " " <exp> )
 <compareop> ::= "<" | ">" | "<=" | ">=" | "==" | "!=" 
+<operation> ::= <exp> ( ( <mathop> | " " <mathop> " " )  <exp> )+ 
 
-<statementif> ::= "if(" <compare> ")" <spacing> <block> ( <statementelif>* <statementelse> )?
-<statementelif> ::= "elif(" <compare> ")" <spacing> <block> 
+<statementif> ::= "if(" <compare> ")" <spacing> <block> (<spacing> <statementelif>)* ( <spacing> <statementelse> )?
+<statementelif> ::= "elif(" <compare> ")" <spacing> <block>
 <statementelse> ::= "else" <spacing> <block>
 
 <statementwhile> ::= "while(" <compare> ")" <spacing> <block>
 <statementfor> ::= "for(" <variable> " in " <number> ")" <spacing> <block>
 
-<operation> ::= ( <variable> | <number> ) ( ( <mathop> | " " <mathop> " " )  <variable> | <number> )+ 
-
 <block> ::= "{" <statement>+ "}"
-<statement> ::=  <spacing> ( ( <definition> | <statementif> | <statementwhile> | <statementfor> ) <terminator> ) <spacing>
+<statement> ::=  <spacing> ( ( <print> | <definition> | <statementif> | <statementwhile> | <statementfor> ) <terminator> ) <spacing>

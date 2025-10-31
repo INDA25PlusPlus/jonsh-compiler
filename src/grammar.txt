@@ -15,12 +15,9 @@
 <compareop> ::= "<" | ">" | "<=" | ">=" | "==" | "!=" 
 <operation> ::= <exp> ( ( <mathop> | " " <mathop> " " )  <exp> )+ 
 
-<statementif> ::= "if(" <compare> ")" <spacing> <block> (<spacing> <statementelif>)* ( <spacing> <statementelse> )?
-<statementelif> ::= "elif(" <compare> ")" <spacing> <block>
-<statementelse> ::= "else" <spacing> <block>
+<statementif> ::= "if(" <compare> ")" <spacing> <block>
 
-<statementwhile> ::= "while(" <compare> ")" <spacing> <block>
 <statementfor> ::= "for(" <variable> "," <number> ")" <spacing> <block>
 
 <block> ::= "{" <statement>+ "}"
-<statement> ::=  <spacing> ( ( <print> | <definition> | <statementif> | <statementwhile> | <statementfor> ) <terminator> ) <spacing>
+<statement> ::=  <spacing> ( ( <print> | <definition> | <statementif> | <statementfor> ) <terminator> ) <spacing>

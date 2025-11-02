@@ -1,3 +1,4 @@
+use crate::backend::Generate;
 use std::env;
 use std::fs;
 
@@ -32,5 +33,7 @@ fn main() {
         .replace(" ", "");
     let tokens = lexicon::tokenize(&contents);
     let mut program = prassel::Parser::new(tokens);
-    println!("ABSTRACT SYNTAX TREE: {:#?}", program.parse_program())
+    let mut source_code = Generate::new(program.parse_program(), Vec::new());
+    let rust_code = source_code.generate_code();
+    println!("{}", rust_code.as_str());
 }

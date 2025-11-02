@@ -11,14 +11,14 @@ impl Parser {
         Parser { tokens, pos: 0 }
     }
 
-    fn current_token(&self) -> Token {
-        self.tokens[self.pos].clone()
-    }
-
     fn get_token(&mut self) -> Token {
         let token = self.tokens[self.pos].clone();
         self.pos = self.pos + 1;
         return token;
+    }
+
+    fn current_token(&self) -> Token {
+        self.tokens[self.pos].clone()
     }
 
     pub fn parse_program(&mut self) -> Vec<Statement> {

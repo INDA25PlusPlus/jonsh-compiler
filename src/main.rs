@@ -2,14 +2,21 @@ use std::env;
 use std::fs;
 
 mod ast;
+mod backend;
 mod lexicon;
 mod prassel;
+
 #[derive(Debug, Clone, PartialEq)]
 pub enum Token {
     Keyword(String),
     Identifier(String),
-    Symbol(char),
+    Comma,
+    LeftPar,
+    RightPar,
+    LeftBrace,
+    RightBrace,
     Number(i32),
+    Math(char),
     Operator(String),
     Terminator,
 }
@@ -18,12 +25,12 @@ fn main() {
     let args: Vec<String> = env::args().collect();
     let file_path = &args[1];
     let mut contents =
-        fs::read_to_string(file_path).expect("Shoyld have been able to read the file");
-    contents = contents.replace("\n", "").replace("\t", "");
-    // let contents: String = contents.split_whitespace().collect();
+        fs::read_to_string(file_path).expect("Should have been able to read the file");
+    contents = contents
+        .replace("\n", "")
+        .replace("\t", "")
+        .replace(" ", "");
     let tokens = lexicon::tokenize(&contents);
-    println!("{:#?}", tokens);
-    let mut parser = prassel::Parser::new(tokens);
-    let program = parser.parse();
-    println!("{:#?}", program);
+    let mut program = prassel::Parser::new(tokens);
+    println!("ABSTRACT SYNTAX TREE: {:#?}", program.parse_program())
 }

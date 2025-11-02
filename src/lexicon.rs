@@ -1,84 +1,76 @@
 use crate::Token;
-use std::iter::Peekable;
-use std::str::Chars;
 
 pub fn tokenize(input: &String) -> Vec<Token> {
     let mut tokens: Vec<Token> = Vec::new();
     let mut current_token = String::new();
-    let mut iter: Peekable<Chars> = input.chars().peekable();
 
-    while let Some(c) = iter.next() {
-        match c {
-            // punctuation that we keep as Symbol/Terminator
-            '(' | ')' | '{' | '}' | ',' => {
-                if !current_token.is_empty() {
-                    tokens.push(Token::Identifier(current_token.clone()));
+    for c in input.chars() {
+        if !current_token.is_empty() {
+            //IF current token isn't empty
+            if ["for", "if", "return"].contains(&current_token.as_str()) {
+                if c == '(' {
+                    tokens.push(Token::Keyword(current_token.clone()));
                     current_token.clear();
+                } else {
+                    current_token.push(c);
                 }
-                tokens.push(Token::Symbol(c));
-            }
-            ';' => {
-                if !current_token.is_empty() {
-                    tokens.push(Token::Identifier(current_token.clone()));
-                    current_token.clear();
-                }
-                tokens.push(Token::Terminator);
-            }
-            // operators: try to form two-char operators first
-            '+' | '-' | '*' | '/' | '=' | '<' | '>' | '!' => {
-                if !current_token.is_empty() {
-                    tokens.push(Token::Identifier(current_token.clone()));
-                    current_token.clear();
-                }
-
-                // try two-char operators: ==, !=, <=, >=
-                if let Some(&next) = iter.peek() {
-                    let two = format!("{}{}", c, next);
-                    match two.as_str() {
-                        "==" | "!=" | "<=" | ">=" => {
-                            // consume next
-                            iter.next();
-                            tokens.push(Token::Operator(two));
-                            continue;
-                        }
-                        _ => {}
+            } else if current_token.chars().all(|s| s.is_alphanumeric()) {
+                if !c.is_alphanumeric() {
+                    if current_token.parse::<i32>().is_ok() {
+                        tokens.push(Token::Number(current_token.clone().parse().unwrap()));
+                        current_token.clear();
+                    } else if current_token.parse::<String>().is_ok() {
+                        tokens.push(Token::Identifier(current_token.clone()));
+                        current_token.clear();
                     }
+                } else {
+                    current_token.push(c);
                 }
-
-                // single-char operator -> Operator(String)
-                tokens.push(Token::Operator(c.to_string()));
-            }
-            ch if ch.is_whitespace() => {
-                if !current_token.is_empty() {
-                    tokens.push(Token::Identifier(current_token.clone()));
+            } else if ["==", "!="].contains(&current_token.clone().as_str()) {
+                tokens.push(Token::Operator(current_token.clone()));
+                current_token.clear();
+            } else if ["=", "!"].contains(&current_token.clone().as_str()) {
+                if c == '=' {
+                    current_token.push(c);
+                } else {
+                    tokens.push(Token::Operator(current_token.clone()));
                     current_token.clear();
                 }
-            }
-            other => {
-                current_token.push(other);
             }
         }
-    }
-
-    if !current_token.is_empty() {
-        tokens.push(Token::Identifier(current_token));
-    }
-
-    // convert identifiers to Keyword or Number where applicable
-    for token in &mut tokens {
-        if let Token::Identifier(s) = token {
-            match s.as_str() {
-                "return" | "if" | "while" | "for" | "print" => {
-                    *token = Token::Keyword(s.clone());
-                }
-                _ => {
-                    if let Ok(num) = s.parse::<i32>() {
-                        *token = Token::Number(num);
-                    }
+        if current_token.is_empty() {
+            //IF current token is empty
+            if c.is_alphanumeric() {
+                current_token.push(c);
+            } else {
+                match c {
+                    '(' => tokens.push(Token::LeftPar),
+                    ')' => tokens.push(Token::RightPar),
+                    '{' => tokens.push(Token::LeftBrace),
+                    '}' => tokens.push(Token::RightBrace),
+                    '+' | '-' | '*' | '/' => tokens.push(Token::Math(c)),
+                    '<' | '>' => tokens.push(Token::Operator(c.to_string())),
+                    '=' | '!' => current_token.push(c),
+                    ',' => tokens.push(Token::Comma),
+                    ';' => tokens.push(Token::Terminator),
+                    _ => {}
                 }
             }
         }
     }
+    return tokens;
+}
 
-    tokens
+#[test]
+fn test_tokenize() {
+    let string = "n=10;
+a0=0;
+a1=1;
+an=0;
+if(n==0){return(0);};
+if(n==1){return(1);};
+for(i,n){an=a1+a0;a0=a1;a1=an};
+return(an);"
+        .to_string();
+    println!("{:?}", tokenize(&string));
 }

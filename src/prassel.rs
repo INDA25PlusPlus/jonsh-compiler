@@ -1,199 +1,206 @@
-// ...existing code...
 use crate::Token;
 use crate::ast::{Expression, Program, Statement};
+use crate::lexicon::tokenize;
 
 pub struct Parser {
     tokens: Vec<Token>,
-    position: usize,
+    pos: usize,
 }
 
 impl Parser {
     pub fn new(tokens: Vec<Token>) -> Self {
-        Parser {
-            tokens,
-            position: 0,
-        }
+        Parser { tokens, pos: 0 }
     }
 
-    pub fn parse(&mut self) -> Program {
-        let mut statements = Vec::new();
-
-        while self.position < self.tokens.len() {
-            if let Some(statement) = self.parse_statement() {
-                statements.push(statement);
-            } else {
-                // advance one token when nothing was parsed to avoid infinite loop
-                self.position += 1;
-            }
-        }
-
-        Program { statements }
+    fn current_token(&self) -> Token {
+        self.tokens[self.pos].clone()
     }
 
-    fn current_statement(&self) -> Option<&Token> {
-        self.tokens.get(self.position)
+    fn get_token(&mut self) -> Token {
+        let token = self.tokens[self.pos].clone();
+        self.pos = self.pos + 1;
+        return token;
     }
 
-    fn parse_statement(&mut self) -> Option<Statement> {
-        match self.current_statement() {
-            Some(Token::Identifier(_)) => self.parse_definition(),
-            Some(Token::Keyword(_)) => self.parse_compare(),
-            _ => None,
-        }
-    }
-
-    fn parse_definition(&mut self) -> Option<Statement> {
-        if let Some(Token::Identifier(name)) = self.current_statement().cloned() {
-            self.position += 1;
-            match self.current_statement() {
-                Some(Token::Symbol('=')) => {
-                    self.position += 1;
-                }
-                Some(Token::Operator(op)) if op == "=" => {
-                    self.position += 1;
-                }
-                _ => return None,
-            }
-            if let Some(value) = self.parse_expression() {
-                // consume optional terminator
-                if matches!(self.current_statement(), Some(Token::Terminator)) {
-                    self.position += 1;
-                }
-                println!("Parsing definition for {}", name);
-                return Some(Statement::Definition { name, value });
-            }
-        }
-        None
-    }
-
-    // precedence helpers
-    fn precedence(op: &str) -> i32 {
-        match op {
-            "==" | "!=" | "<" | ">" | "<=" | ">=" => 5,
-            "+" | "-" => 10,
-            "*" | "/" => 20,
-            _ => 0,
-        }
-    }
-    fn is_right_associative(op: &str) -> bool {
-        matches!(op, "^")
-    }
-
-    fn parse_primary(&mut self) -> Option<Expression> {
-        match self.current_statement().cloned() {
-            Some(Token::Number(n)) => {
-                self.position += 1;
-                Some(Expression::Number(n))
-            }
-            Some(Token::Identifier(name)) => {
-                self.position += 1;
-                Some(Expression::Variable(name))
-            }
-            Some(Token::Symbol('(')) => {
-                self.position += 1; // consume '('
-                let expr = self.parse_expression_prec(0);
-                if matches!(self.current_statement(), Some(Token::Symbol(')'))) {
-                    self.position += 1; // consume ')'
-                }
-                expr
-            }
-            _ => None,
-        }
-    }
-
-    fn parse_expression_prec(&mut self, min_prec: i32) -> Option<Expression> {
-        let mut left = self.parse_primary()?;
-
-        loop {
-            // accept Operator(String) tokens only (lexicon now makes operators Operator)
-            let op = match self.current_statement() {
-                Some(Token::Operator(s)) => s.clone(),
-                _ => break,
-            };
-
-            let prec = Self::precedence(&op);
-            if prec < min_prec {
+    pub fn parse_program(&mut self) -> Vec<Statement> {
+        let mut statements: Vec<Statement> = Vec::new();
+        while self.pos < self.tokens.len() {
+            if self.current_token() == Token::RightBrace {
                 break;
             }
-
-            // consume operator token
-            self.position += 1;
-
-            let next_min = if Self::is_right_associative(&op) {
-                prec
-            } else {
-                prec + 1
-            };
-
-            let right = match self.parse_expression_prec(next_min) {
-                Some(r) => r,
-                None => return None,
-            };
-
-            left = Expression::BinaryOp {
-                operator: op,
-                left: Box::new(left),
-                right: Box::new(right),
-            };
+            statements.push(self.parse_statement());
         }
-
-        Some(left)
+        return statements;
     }
 
-    fn parse_expression(&mut self) -> Option<Expression> {
-        self.parse_expression_prec(0)
+    fn parse_definition(&mut self) -> Statement {
+        if let Token::Identifier(name) = self.get_token() {
+            if self.current_token() == Token::Operator("=".to_string()) {
+                self.pos = self.pos + 1;
+                let expr = self.parse_expression();
+                return Statement::Definition {
+                    name: name,
+                    value: expr,
+                };
+            } else {
+                panic!("Stoopid");
+            }
+        } else {
+            panic!(
+                "Failed to get Identifier token, processing current token: {:?}",
+                self.current_token()
+            );
+        }
     }
 
-    fn parse_compare(&mut self) -> Option<Statement> {
-        println!("Parsing comparison");
-        if let Some(Token::Keyword(keyword)) = self.current_statement().cloned() {
-            if keyword == "if" {
-                println!("Found if keyword");
-                self.position += 1;
-                if matches!(self.current_statement(), Some(Token::Symbol('('))) {
-                    self.position += 1;
-                    println!("Parsing if statement");
-                    if let Some(condition) = self.parse_expression() {
-                        println!("Parsed condition: {:?}", condition);
-                        // expect closing ')'
-                        if matches!(self.current_statement(), Some(Token::Symbol(')'))) {
-                            self.position += 1;
-                            if matches!(self.current_statement(), Some(Token::Symbol('{'))) {
-                                self.position += 1;
-                                let mut then_block = Vec::new();
-                                while let Some(token) = self.current_statement() {
-                                    println!("Found token in then block: {:?}", token);
-                                    if *token == Token::Symbol('}') {
-                                        println!("End of then block");
-                                        break;
-                                    }
-                                    if let Some(statement) = self.parse_statement() {
-                                        then_block.push(statement);
-                                    } else {
-                                        // advance if nothing parsed
-                                        self.position += 1;
-                                    }
-                                }
-                                if matches!(self.current_statement(), Some(Token::Symbol('}'))) {
-                                    self.position += 1;
-                                    // consume optional terminator after block
-                                    if matches!(self.current_statement(), Some(Token::Terminator)) {
-                                        self.position += 1;
-                                    }
-                                    return Some(Statement::If {
-                                        condition,
-                                        then_block,
-                                        elif_blocks: Vec::new(),
-                                        else_block: None,
-                                    });
-                                }
-                            }
-                        }
+    fn parse_keyword(&mut self) -> Statement {
+        if let Token::Keyword(val) = self.get_token() {
+            if self.get_token() != Token::LeftPar {
+                panic!("expected Left Parenthesis")
+            }
+            match val.as_str() {
+                "return" => {
+                    let expression = self.parse_expression();
+                    if self.get_token() != Token::RightPar {
+                        panic!(
+                            "Non Closed paranthesis, Current Token: {:?}",
+                            self.current_token()
+                        )
+                    }
+                    return Statement::Return(expression);
+                }
+                "if" => {
+                    let condition = self.parse_expression();
+                    if self.get_token() != Token::RightPar {
+                        panic!(
+                            "Syntax failed on RightPar, Current Token: {:?}",
+                            self.current_token()
+                        )
+                    }
+                    if self.get_token() != Token::LeftBrace {
+                        panic!(
+                            "Syntax failed on LeftBrace, Current Token: {:?}",
+                            self.current_token()
+                        );
+                    }
+                    let block = Box::new(self.parse_program());
+                    if self.get_token() == Token::RightBrace {
+                        return Statement::If { condition, block };
+                    } else {
+                        panic!("No closing bracket at {}", self.pos)
                     }
                 }
+                "for" => {
+                    if let Token::Identifier(name) = self.get_token() {
+                        if self.get_token() != Token::Comma {
+                            panic!(
+                                "Syntax failed on Comma , Current Token: {:?}",
+                                self.current_token()
+                            )
+                        }
+                        let expression = self.parse_expression();
+                        if self.get_token() != Token::RightPar {
+                            panic!(
+                                "Syntax failed on RightPar, Current Token: {:?}",
+                                self.current_token()
+                            );
+                        }
+                        if self.get_token() != Token::LeftBrace {
+                            panic!(
+                                "Syntax failed on LeftBrace, Current Token: {:?}",
+                                self.current_token()
+                            );
+                        }
+                        let block = Box::new(self.parse_program());
+                        if self.get_token() == Token::RightBrace {
+                            return Statement::For {
+                                name,
+                                expression,
+                                block,
+                            };
+                        } else {
+                            panic!("No closing bracket at {}", self.pos)
+                        }
+                    } else {
+                        panic!(
+                            "Syntax Failed on Identifier, Current Token: {:?}",
+                            self.current_token()
+                        )
+                    }
+                }
+                _ => panic!("No such keyword as {val}"),
+            }
+        } else {
+            panic!("Syntax failed on keyword function")
+        }
+    }
+
+    fn parse_expression(&mut self) -> Expression {
+        let left = self.get_token();
+
+        if let Token::Math(sign) = self.current_token() {
+            self.pos = self.pos + 1;
+            let right = Box::new(self.parse_expression());
+            return Expression::BinaryOp {
+                operator: sign.to_string(),
+                left: left,
+                right: right,
+            };
+        }
+        // else if let Token::Terminator = self.current_token() {
+        //     match left {
+        //         Token::Identifier(name) => return Expression::Variable(name),
+        //         Token::Number(value) => return Expression::Number(value),
+        //         _ => panic!("WHAT THE FUCK"),
+        //     }
+        // } else if let Token::Comma = self.current_token() {
+        //     match left {
+        //         Token::Identifier(name) => return Expression::Variable(name),
+        //         Token::Number(value) => return Expression::Number(value),
+        //         _ => panic!("WHAT THE FUCK PART 2"),
+        //     }
+        // }
+        else if let Token::Operator(sign) = self.current_token() {
+            self.pos = self.pos + 1;
+            let right = Box::new(self.parse_expression());
+            return Expression::BinaryOp {
+                operator: sign,
+                left: left,
+                right: right,
+            };
+        } else {
+            // self.pos = self.pos + 1;
+            match left {
+                Token::Identifier(name) => return Expression::Identifier(name),
+                Token::Number(value) => return Expression::Number(value),
+                _ => panic!("WHAT THE FUCK"),
             }
         }
-        None
+    }
+
+    fn parse_statement(&mut self) -> Statement {
+        let statement: Statement;
+        match self.current_token() {
+            Token::Keyword(_) => statement = self.parse_keyword(),
+            Token::Identifier(_) => statement = self.parse_definition(),
+            _ => panic!(
+                "PARSE STATEMENT FAILED ATT TOKEN: {:?}",
+                self.current_token()
+            ),
+        }
+        if self.get_token() == Token::Terminator {
+            return statement;
+        } else {
+            panic!("Expected ';', Current Token: {:?}", self.current_token())
+        }
     }
 }
-// ...existing code...
+
+#[test]
+fn test() {
+    let program = "a=2;b=2;c=a+b+2+c+2;".to_string();
+    let tokens = tokenize(&program);
+    let mut parser = Parser::new(tokens);
+    let ast = parser.parse_program();
+    println!("AST:\n{:#?}", ast);
+}

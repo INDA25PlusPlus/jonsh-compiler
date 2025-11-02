@@ -1,10 +1,12 @@
+use crate::Token;
+
 #[derive(Debug, Clone)]
 pub enum Expression {
     Number(i32),
-    Variable(String),
+    Identifier(String),
     BinaryOp {
         operator: String,
-        left: Box<Expression>,
+        left: Token,
         right: Box<Expression>,
     },
 }
@@ -15,18 +17,15 @@ pub enum Statement {
         name: String,
         value: Expression,
     },
-    Returnn(Expression),
-
+    Return(Expression),
     If {
         condition: Expression,
-        then_block: Vec<Statement>,
-        elif_blocks: Vec<(Expression, Vec<Statement>)>,
-        else_block: Option<Vec<Statement>>,
+        block: Box<Vec<Statement>>,
     },
     For {
-        var: String,
-        limit: i32,
-        body: Vec<Statement>,
+        name: String,
+        expression: Expression,
+        block: Box<Vec<Statement>>,
     },
 }
 

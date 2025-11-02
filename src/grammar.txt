@@ -12,7 +12,7 @@
 <definition> ::= <variable> ( "=" | " = " ) ( <exp> | <operation> )
 <mathop> ::=  "+" | "-" | "*" | "/"
 <compare> ::= ( <exp> <compareop> <exp> ) | ( <exp> " " <compareop> " " <exp> )
-<compareop> ::= "<" | ">" | "<=" | ">=" | "==" | "!=" 
+<compareop> ::= "<" | ">" | "==" | "!=" 
 <operation> ::= <exp> ( ( <mathop> | " " <mathop> " " )  <exp> )+ 
 
 <statementif> ::= "if(" <compare> ")" <spacing> <block>

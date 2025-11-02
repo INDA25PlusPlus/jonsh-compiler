@@ -48,7 +48,7 @@ pub fn tokenize(input: &String) -> Vec<Token> {
                     ')' => tokens.push(Token::RightPar),
                     '{' => tokens.push(Token::LeftBrace),
                     '}' => tokens.push(Token::RightBrace),
-                    '+' | '-' | '*' | '/' => tokens.push(Token::Math(c)),
+                    '+' | '-' | '*' | '/' => tokens.push(Token::Operator(c.to_string())),
                     '<' | '>' => tokens.push(Token::Operator(c.to_string())),
                     '=' | '!' => current_token.push(c),
                     ',' => tokens.push(Token::Comma),

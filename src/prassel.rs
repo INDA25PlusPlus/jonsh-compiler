@@ -1,6 +1,5 @@
 use crate::Token;
-use crate::ast::{Expression, Program, Statement};
-use crate::lexicon::tokenize;
+use crate::ast::{Expression, Statement};
 
 pub struct Parser {
     tokens: Vec<Token>,
@@ -34,147 +33,97 @@ impl Parser {
     }
 
     fn parse_definition(&mut self) -> Statement {
-        if let Token::Identifier(name) = self.get_token() {
+        if let Token::Identifier(identifier) = self.get_token() {
             if self.current_token() == Token::Operator("=".to_string()) {
                 self.pos = self.pos + 1;
                 let expr = self.parse_expression();
                 return Statement::Definition {
-                    name: name,
+                    identifier,
                     value: expr,
                 };
-            } else {
-                panic!("Stoopid");
             }
-        } else {
-            panic!(
-                "Failed to get Identifier token, processing current token: {:?}",
-                self.current_token()
-            );
+            panic!("Expected '=' at pos: {}", self.pos);
         }
+        panic!("Expected identifier at pos: {}", self.pos);
     }
 
     fn parse_keyword(&mut self) -> Statement {
         if let Token::Keyword(val) = self.get_token() {
+            let expression: Expression;
             if self.get_token() != Token::LeftPar {
-                panic!("expected Left Parenthesis")
-            }
+                panic!("Expected '(' at pos: {}", self.pos)
+            };
             match val.as_str() {
                 "return" => {
-                    let expression = self.parse_expression();
-                    if self.get_token() != Token::RightPar {
-                        panic!(
-                            "Non Closed paranthesis, Current Token: {:?}",
-                            self.current_token()
-                        )
-                    }
-                    return Statement::Return(expression);
+                    expression = self.parse_expression();
                 }
                 "if" => {
-                    let condition = self.parse_expression();
-                    if self.get_token() != Token::RightPar {
-                        panic!(
-                            "Syntax failed on RightPar, Current Token: {:?}",
-                            self.current_token()
-                        )
-                    }
-                    if self.get_token() != Token::LeftBrace {
-                        panic!(
-                            "Syntax failed on LeftBrace, Current Token: {:?}",
-                            self.current_token()
-                        );
-                    }
-                    let block = Box::new(self.parse_program());
-                    if self.get_token() == Token::RightBrace {
-                        return Statement::If { condition, block };
-                    } else {
-                        panic!("No closing bracket at {}", self.pos)
-                    }
+                    expression = self.parse_expression();
                 }
                 "for" => {
-                    if let Token::Identifier(name) = self.get_token() {
+                    if let Token::Identifier(index) = self.get_token() {
                         if self.get_token() != Token::Comma {
-                            panic!(
-                                "Syntax failed on Comma , Current Token: {:?}",
-                                self.current_token()
-                            )
-                        }
-                        let expression = self.parse_expression();
+                            panic!("Expected ',' at pos: {}", self.pos)
+                        };
+                        expression = self.parse_expression();
                         if self.get_token() != Token::RightPar {
-                            panic!(
-                                "Syntax failed on RightPar, Current Token: {:?}",
-                                self.current_token()
-                            );
-                        }
+                            panic!("Expected ')' at pos: {}", self.pos)
+                        };
                         if self.get_token() != Token::LeftBrace {
-                            panic!(
-                                "Syntax failed on LeftBrace, Current Token: {:?}",
-                                self.current_token()
-                            );
-                        }
+                            panic!("Expected '{{' at pos {}", self.pos)
+                        };
                         let block = Box::new(self.parse_program());
-                        if self.get_token() == Token::RightBrace {
-                            return Statement::For {
-                                name,
-                                expression,
-                                block,
-                            };
-                        } else {
-                            panic!("No closing bracket at {}", self.pos)
+                        if self.get_token() != Token::RightBrace {
+                            panic!("Expected '}}' at pos {}", self.pos)
                         }
-                    } else {
-                        panic!(
-                            "Syntax Failed on Identifier, Current Token: {:?}",
-                            self.current_token()
-                        )
+                        return Statement::For {
+                            index,
+                            expression,
+                            block,
+                        };
                     }
+                    panic!("Expected identifier at pos: {}", self.pos);
                 }
-                _ => panic!("No such keyword as {val}"),
+                _ => panic!("Shouldn't happen"),
             }
-        } else {
-            panic!("Syntax failed on keyword function")
+            if self.get_token() != Token::RightPar {
+                panic!("Expected ')' at pos: {}", self.pos)
+            }
+            if val.as_str() == "return" {
+                return Statement::Return(expression);
+            }
+            if self.get_token() != Token::LeftBrace {
+                panic!("Expected '{{' at pos {}", self.pos)
+            }
+            let block = Box::new(self.parse_program());
+            if self.get_token() != Token::RightBrace {
+                panic!("Expected '}}' at pos {}", self.pos)
+            }
+            if val.as_str() == "if" {
+                return Statement::If {
+                    condition: expression,
+                    block,
+                };
+            }
+            panic!("Shouldn't happen")
         }
+        panic!("Shouldn't happen")
     }
 
     fn parse_expression(&mut self) -> Expression {
         let left = self.get_token();
-
-        if let Token::Math(sign) = self.current_token() {
-            self.pos = self.pos + 1;
-            let right = Box::new(self.parse_expression());
+        if let Token::Operator(operator) = self.current_token() {
+            self.pos += 1;
             return Expression::BinaryOp {
-                operator: sign.to_string(),
-                left: left,
-                right: right,
+                operator,
+                left,
+                right: Box::new(self.parse_expression()),
             };
         }
-        // else if let Token::Terminator = self.current_token() {
-        //     match left {
-        //         Token::Identifier(name) => return Expression::Variable(name),
-        //         Token::Number(value) => return Expression::Number(value),
-        //         _ => panic!("WHAT THE FUCK"),
-        //     }
-        // } else if let Token::Comma = self.current_token() {
-        //     match left {
-        //         Token::Identifier(name) => return Expression::Variable(name),
-        //         Token::Number(value) => return Expression::Number(value),
-        //         _ => panic!("WHAT THE FUCK PART 2"),
-        //     }
-        // }
-        else if let Token::Operator(sign) = self.current_token() {
-            self.pos = self.pos + 1;
-            let right = Box::new(self.parse_expression());
-            return Expression::BinaryOp {
-                operator: sign,
-                left: left,
-                right: right,
-            };
-        } else {
-            // self.pos = self.pos + 1;
-            match left {
-                Token::Identifier(name) => return Expression::Identifier(name),
-                Token::Number(value) => return Expression::Number(value),
-                _ => panic!("WHAT THE FUCK"),
-            }
+        match left {
+            Token::Identifier(identifier) => return Expression::Identifier(identifier),
+            Token::Number(value) => return Expression::Number(value),
+            _ => panic!("Expected expression at pos: {}", self.pos),
         }
     }
 
@@ -183,24 +132,25 @@ impl Parser {
         match self.current_token() {
             Token::Keyword(_) => statement = self.parse_keyword(),
             Token::Identifier(_) => statement = self.parse_definition(),
-            _ => panic!(
-                "PARSE STATEMENT FAILED ATT TOKEN: {:?}",
-                self.current_token()
-            ),
+            _ => panic!("expected keyword or identifier at pos: {}", self.pos),
         }
         if self.get_token() == Token::Terminator {
             return statement;
-        } else {
-            panic!("Expected ';', Current Token: {:?}", self.current_token())
         }
+        panic!("Expected ';', at pos: {}", self.pos)
     }
 }
 
-#[test]
-fn test() {
-    let program = "a=2;b=2;c=a+b+2+c+2;".to_string();
-    let tokens = tokenize(&program);
-    let mut parser = Parser::new(tokens);
-    let ast = parser.parse_program();
-    println!("AST:\n{:#?}", ast);
+#[cfg(test)]
+mod test {
+    use crate::lexicon::tokenize;
+    use crate::prassel::Parser;
+    #[test]
+    fn test() {
+        let program = "a=1+1;".to_string();
+        let tokens = tokenize(&program);
+        let mut parser = Parser::new(tokens);
+        let ast = parser.parse_program();
+        println!("AST:\n{:#?}", ast);
+    }
 }

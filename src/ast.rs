@@ -1,5 +1,6 @@
 use crate::Token;
 
+#[allow(dead_code)]
 #[derive(Debug, Clone)]
 pub enum Expression {
     Number(i32),
@@ -12,9 +13,10 @@ pub enum Expression {
 }
 
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub enum Statement {
     Definition {
-        name: String,
+        identifier: String,
         value: Expression,
     },
     Return(Expression),
@@ -23,12 +25,13 @@ pub enum Statement {
         block: Box<Vec<Statement>>,
     },
     For {
-        name: String,
+        index: String,
         expression: Expression,
         block: Box<Vec<Statement>>,
     },
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Clone)]
 pub struct Program {
     pub statements: Vec<Statement>,

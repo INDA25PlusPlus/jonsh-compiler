@@ -1,0 +1,4 @@
+Compiler för mitt språk: "newprogramminglanguagethatimadeupp"
+
+Hur man använder?
+Min compiler tar mitt kod-språk och omvandlar det till rust kod som kan köras i t.ex. main.rs filen. Så för att skapa kod måste du 1. Skriva kod enligt min grammatik och lägga den i "root folder", 2. Köra mitt program med namnet på filen med koden som argument, t.ex. "cargo run -- code.newprogramminglanguagethatimadeupp", 3. Efter att du kört mitt program så returnerar den en rust funktion till terminalen, 4. För att sedan köra koden som genererats är det bara att kopiera rust koden som returnerats och sedan köra den.

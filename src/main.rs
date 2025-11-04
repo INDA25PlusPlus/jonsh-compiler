@@ -33,7 +33,7 @@ fn main() {
         .replace(" ", "");
     let tokens = lexicon::tokenize(&contents);
     let mut program = prassel::Parser::new(tokens);
-    let mut source_code = Generate::new(program.parse_program(), Vec::new());
-    let rust_code = source_code.generate_code();
+    let mut source_code = Generate::new(program.parse_program(), Vec::new(), 0);
+    let rust_code = source_code.formatting();
     println!("{}", rust_code.as_str());
 }

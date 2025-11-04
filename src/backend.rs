@@ -5,14 +5,16 @@ pub struct Generate {
     statements: Vec<Statement>,
     pos: usize,
     identifiers: Vec<String>,
+    space: i32,
 }
 
 impl Generate {
-    pub fn new(statements: Vec<Statement>, identifiers: Vec<String>) -> Self {
+    pub fn new(statements: Vec<Statement>, identifiers: Vec<String>, space: i32) -> Self {
         Generate {
             statements,
             pos: 0,
             identifiers,
+            space: space + 1,
         }
     }
 
@@ -38,76 +40,84 @@ impl Generate {
             } => {
                 if let Token::Identifier(name) = left {
                     let expr = self.from_expression(*right);
-                    string.push_str(&name);
-                    string.push_str(&operator);
-                    string.push_str(&expr);
-                    return string;
+                    string.push_str(format!("{}{}{}", &name, &operator, &expr).as_str());
                 }
-                panic!("Error")
+                string
             }
         }
     }
 
     fn generate_definition(&mut self) -> String {
-        let mut strings: Vec<String> = Vec::new();
+        let mut strings = String::new();
         if let Statement::Definition { identifier, value } = self.get_statement() {
             if !self.identifiers.contains(&identifier.clone()) {
-                strings.push("let mut ".to_string());
+                strings.push_str("let mut ");
             }
-            strings.push(identifier.clone());
-            self.identifiers.push(identifier);
-            strings.push("=".to_string());
-            strings.push(self.from_expression(value));
-            strings.push(";".to_string());
+            self.identifiers.push(identifier.clone());
+            strings.push_str(format!("{}={};", identifier, self.from_expression(value)).as_str());
         }
-        let strings: String = strings.join("");
-        return strings;
+        strings
     }
 
     fn generate_for(&mut self) -> String {
-        let mut strings: Vec<String> = vec!["for ".to_string()];
+        let mut strings = String::new();
         if let Statement::For {
             index,
             expression,
             block,
         } = self.get_statement()
         {
-            strings.push(index);
-            strings.push(" in 1..".to_string());
-            strings.push(self.from_expression(expression));
-            strings.push(" { \n\t".to_string());
-            let mut block_statements = Generate::new(*block, self.identifiers.clone());
-            strings.push(
-                block_statements
-                    .generate_code()
-                    .split("\n")
-                    .collect::<Vec<_>>()
-                    .join("\n\t"),
+            self.space += 1;
+            let mut block_statements = Generate::new(*block, self.identifiers.clone(), self.space);
+            let mut space = String::new();
+            for _ in 0..(self.space - 1) {
+                space.push_str("\t");
+            }
+            strings.push_str(
+                format!(
+                    "for {} in 1..{} {{\n{}{}}}\n",
+                    index,
+                    self.from_expression(expression),
+                    block_statements.generate_code(self.space),
+                    space
+                )
+                .as_str(),
             );
-            strings.push("\n}".to_string());
         }
-        let strings: String = strings.join("");
+        self.space += -1;
         strings
     }
+
     fn generate_if(&mut self) -> String {
-        let mut strings: Vec<String> = vec!["if ".to_string()];
+        let mut strings = String::new();
         if let Statement::If { condition, block } = self.get_statement() {
-            strings.push(self.from_expression(condition));
-            strings.push(" { \n\t".to_string());
-            let mut block_statements = Generate::new(*block, self.identifiers.clone());
-            strings.push(block_statements.generate_code());
-            strings.push("\n}".to_string());
+            self.space += 1;
+            let mut block_statements = Generate::new(*block, self.identifiers.clone(), self.space);
+            let mut space = String::new();
+            for _ in 0..(self.space - 1) {
+                space.push_str("\t");
+            }
+            strings.push_str(
+                format!(
+                    "if {} {{\n{}{}}}\n",
+                    self.from_expression(condition),
+                    block_statements.generate_code(self.space),
+                    space
+                )
+                .as_str(),
+            );
         }
-        let strings: String = strings.join("");
+        self.space += -1;
         strings
     }
+
     fn generate_return(&mut self) -> String {
-        let mut strings: Vec<String> = vec!["return ".to_string()];
+        let mut strings = String::new();
         if let Statement::Return(expression) = self.get_statement() {
-            strings.push(self.from_expression(expression));
-            strings.push(";".to_string());
+            strings.push_str(
+                format!("println!(\"{{}}\",{});", self.from_expression(expression)).as_str(),
+            );
         }
-        let strings: String = strings.join("");
         strings
     }
 
@@ -122,20 +132,37 @@ impl Generate {
         return string;
     }
 
-    pub fn generate_code(&mut self) -> String {
+    pub fn generate_code(&mut self, n: i32) -> String {
         let mut statements: Vec<String> = Vec::new();
         while self.pos < self.statements.len() {
-            statements.push(self.generate_statement());
+            let mut space = String::new();
+            for _ in 0..n {
+                space.push_str("\t");
+            }
+            statements.push(space + self.generate_statement().as_str());
         }
-        let statements: String = statements.join("\n");
+        let statements: String = statements.join("");
         return statements;
+    }
+
+    pub fn formatting(&mut self) -> String {
+        let mut code = self.generate_code(self.space);
+        let mut space = String::new();
+        for _ in 0..(self.space - 1) {
+            space.push_str("\t");
+        }
+        code = format!(
+            "{}fn main() {{\n{}\n{}}}",
+            space,
+            code.replace(";", ";\n"),
+            space
+        );
+        return code;
     }
 }
 
 #[cfg(test)]
 mod test {
-    use crate::Token;
-    use crate::ast::Expression;
     use crate::backend::Generate;
     use crate::lexicon::tokenize;
     use crate::prassel::Parser;
@@ -154,10 +181,11 @@ return(an);"
         let tokens = tokenize(&program);
         let mut parser = Parser::new(tokens);
         let ast = parser.parse_program();
-        let mut code = Generate::new(ast, Vec::new());
+        let mut code = Generate::new(ast, Vec::new(), 0);
+
         // let statement = code.generate_statement();
         // println!("Statement: {:?}", statement);
-        println!("{}", code.generate_code());
+        println!("{}", code.formatting());
     }
 
     #[test]
@@ -167,10 +195,10 @@ return(an);"
         let mut a1 = 1;
         let mut an = 0;
         if n == 0 {
-            println!("0");
+            println!("{}", 0);
         }
         if n == 1 {
-            println!("1");
+            println!("{}", 1);
         }
         for i in 1..n {
             an = a1 + a0;
